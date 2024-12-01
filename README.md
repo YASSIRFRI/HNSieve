@@ -34,9 +34,3 @@ By leveraging a B+ tree for pre-filtering and HNSW for ANN searches, this projec
 - CMake 3.10 or higher
 - HNSWLib (available at [HNSWLib GitHub Repository](https://github.com/nmslib/hnswlib))
 - A C++ compiler (e.g., GCC, Clang)
-
-### Build Steps
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/dataprism.git
-   cd dataprism
