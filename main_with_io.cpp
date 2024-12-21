@@ -13,11 +13,12 @@
 #include <cmath>      
 
 
+
+
 int main(int argc, char* argv[]) {
-    using KeyType = uint32_t; // Using uint32_t to match SaveKNN's KNN indices
+    using KeyType = uint32_t; 
     using VectorType = std::array<float, Dimension>;
 
-    // Check command-line arguments
     if (argc < 4) {
         std::cerr << "Usage: " << argv[0] 
                   << " <input_data_file> <queries_file> <output_knn_file>\n";
@@ -28,7 +29,6 @@ int main(int argc, char* argv[]) {
     std::string queries_file = argv[2];
     std::string output_knn_file = argv[3];
 
-    // Step 1: Read binary data
     std::vector<std::vector<float>> raw_data;
     std::cout << "Dimension: " << Dimension << std::endl;
     bool data_read_success = ReadBin(input_data_file, Dimension, raw_data);
@@ -45,10 +45,9 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Number of vectors read: " << N << std::endl;
 
-    BpTree<KeyType, 64> bptree; // Ensure BpTree is properly defined with necessary methods
+    BpTree<KeyType, 64> bptree;
     std::cout << "Initialized B+ tree." << std::endl;
 
-    // Step 2: Insert data into B+ tree
     auto insert_start = std::chrono::high_resolution_clock::now();
     for (uint32_t i = 0; i < N; ++i) {
         KeyType key = i; 
@@ -97,17 +96,17 @@ int main(int argc, char* argv[]) {
     // Step 4: Perform KNN Searches
     auto knn_start = std::chrono::high_resolution_clock::now();
     for (uint32_t i = 0; i < Q; ++i) {
-        std::vector<KeyType> neighbors;
-        bool success = bptree.FindKNN(queries[i], K, neighbors);
-        if (success && neighbors.size() == K) {
-            knn_results[i] = neighbors;
-        } else {
-            std::cerr << "KNN search failed for query " << i << std::endl;
-        }
+        //std::vector<KeyType> neighbors;
+        //bool success = bptree.FindKNN(queries[i], K, neighbors);
+        //if (success && neighbors.size() == K) {
+            //knn_results[i] = neighbors;
+        //} else {
+            //std::cerr << "KNN search failed for query " << i << std::endl;
+        //}
 
-        if ((i + 1) % 1000 == 0 || i == Q - 1) { // Log at every 1000 queries and last query
-            std::cout << "Processed " << (i + 1) << " / " << Q << " queries." << std::endl;
-        }
+        //if ((i + 1) % 1000 == 0 || i == Q - 1) { // Log at every 1000 queries and last query
+            //std::cout << "Processed " << (i + 1) << " / " << Q << " queries." << std::endl;
+        //}
     }
     auto knn_end = std::chrono::high_resolution_clock::now();
     auto knn_duration = std::chrono::duration_cast<std::chrono::seconds>(knn_end - knn_start).count();

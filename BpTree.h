@@ -14,7 +14,7 @@
 #include <cmath>      
 #include "hnswlib/hnswlib.h"
 
-constexpr int Dimension = 102; // [0]: id, [1-100]: d1-d100, [101]: c_value
+constexpr int Dimension = 102; 
 
 using VectorType = std::array<float, Dimension>;
 
@@ -87,8 +87,13 @@ public:
     };
 
 public:
-    BpTree() : root_(std::make_shared<LeafNode>()) {}
-    
+    // Constructor
+    BpTree() : root_(std::make_shared<LeafNode>()) {
+
+    }
+
+
+
     void Insert(const KeyType& key, const VectorType& vector) {
         if (root_->is_leaf_) {
             auto leaf = std::static_pointer_cast<LeafNode>(root_);
@@ -218,7 +223,7 @@ private:
         }
 
         int pos = 0;
-        while (pos < leaf->count_ && temp_keys[pos] < key) pos++;
+        while(pos<leaf->count_&&temp_keys[pos]<key) pos++;
         if (pos < leaf->count_ && temp_keys[pos] == key) {
             temp_values[pos].push_back(vector);
         } else {
@@ -296,7 +301,6 @@ private:
         std::vector<std::shared_ptr<Node>> path;
         FindPathToNode(root_, old_node, path);
         if (path.empty()) {
-            // old_node was root
             auto new_root = std::make_shared<InternalNode>();
             new_root->keys_[0] = key;
             new_root->children_[0] = old_node;

@@ -30,7 +30,5 @@ By leveraging a B+ tree for pre-filtering and HNSW for ANN searches, this projec
 ## Installation
 
 ### Prerequisites
-- C++17 or higher
-- CMake 3.10 or higher
 - HNSWLib (available at [HNSWLib GitHub Repository](https://github.com/nmslib/hnswlib))
 - A C++ compiler (e.g., GCC, Clang)

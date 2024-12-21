@@ -6,7 +6,7 @@ from collections import defaultdict
 def load_input(input_file):
     """
     Loads input vectors from input.txt.
-    Returns a dictionary mapping ID to vector (numpy array).
+    Returns a dictionary mapping ID to vector (numpy array) and c_value.
     """
     id_to_vector = {}
     with open(input_file, 'r') as f:
@@ -52,10 +52,11 @@ def load_queries(queries_file):
     print(f"Total queries loaded: {len(queries)}")
     return queries
 
-def load_output(output_file, k):
+def load_output(output_file, k, id_to_vector, queries):
     """
     Loads output IDs from output.txt.
-    Returns a list of lists, each containing k IDs.
+    Filters them based on categorical constraints.
+    Returns a list of lists, each containing k valid IDs (padded with 0s if necessary).
     """
     output_ids = []
     with open(output_file, 'r') as f:
@@ -65,22 +66,35 @@ def load_output(output_file, k):
                 continue
             id_strs = line.strip().split()
             try:
+                # Convert ID strings to integers
                 ids = [int(float(id_str)) for id_str in id_strs[:k]]
-                # Pad with 0s if fewer than k IDs are present
-                while len(ids) < k:
-                    ids.append(0)
-                output_ids.append(ids)
             except ValueError:
                 print(f"Warning: Line {line_num} in '{output_file}' has invalid IDs.")
-                output_ids.append([0] * k)
+                ids = [0] * k
+
+            # Retrieve the corresponding c_values for filtering
+            # Assuming the queries are in the same order as outputs
+            if line_num > len(queries):
+                print(f"Warning: More output lines than queries. Line {line_num} will be skipped.")
+                continue
+            _, _, c_min, c_max = queries[line_num - 1]
+            # Filter IDs based on categorical constraints
+            valid_ids = [id_ for id_ in ids if id_ in id_to_vector and c_min <= id_to_vector[id_][1] <= c_max]
+            # Shift valid IDs to the front and pad with 0s if necessary
+            valid_ids_padded = valid_ids[:k]
+            while len(valid_ids_padded) < k:
+                valid_ids_padded.append(0)
+            output_ids.append(valid_ids_padded)
+
             if line_num % 100000 == 0:
                 print(f"Loaded {line_num} output ID lists.")
+
     print(f"Total output ID lists loaded: {len(output_ids)}")
     return output_ids
 
 def compute_recall(id_to_vector, queries, output_ids, k, truth_save_path=None):
     """
-    Computes recall by comparing output_ids against true top-k closest IDs.
+    Computes recall by comparing output_ids against true top-k closest IDs within categorical constraints.
     Saves the computed truth data to a file if `truth_save_path` is provided.
     Returns recall as a float.
     """
@@ -122,9 +136,12 @@ def compute_recall(id_to_vector, queries, output_ids, k, truth_save_path=None):
 
         # Compare the expected_ids and program_ids
         # Recall@k counts how many expected IDs are present in program_ids
-        hits = set(expected_ids) & set(program_ids)
+        # Exclude 0s from both lists
+        expected_set = set(expected_ids) - {0}
+        program_set = set(program_ids) - {0}
+        hits = expected_set & program_set
         correct += len(hits)
-        total += k
+        total += len(expected_set)
 
         if (idx + 1) % 10000 == 0:
             print(f"Processed {idx + 1} queries.")
@@ -148,7 +165,7 @@ def main(input_file, queries_file, output_file, k, truth_save_path="truth.txt"):
     queries = load_queries(queries_file)
     
     print("Loading program output...")
-    output_ids = load_output(output_file, k)
+    output_ids = load_output(output_file, k, id_to_vector, queries)
     
     print("Computing recall and saving truth data...")
     recall = compute_recall(id_to_vector, queries, output_ids, k, truth_save_path)
@@ -156,7 +173,7 @@ def main(input_file, queries_file, output_file, k, truth_save_path="truth.txt"):
     print(f"Recall@{k}: {recall * 100:.2f}%")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Verify C++ program output and compute recall for top-k neighbors.")
+    parser = argparse.ArgumentParser(description="Verify C++ program output and compute recall for top-k neighbors with categorical constraints.")
     parser.add_argument('--input', type=str, required=True, help='Path to input.txt.')
     parser.add_argument('--queries', type=str, required=True, help='Path to queries.txt.')
     parser.add_argument('--output', type=str, required=True, help='Path to output.txt.')
