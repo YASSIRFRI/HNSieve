@@ -32,3 +32,58 @@ By leveraging a B+ tree for pre-filtering and HNSW for ANN searches, this projec
 ### Prerequisites
 - HNSWLib (available at [HNSWLib GitHub Repository](https://github.com/nmslib/hnswlib))
 - A C++ compiler (e.g., GCC, Clang)
+
+
+
+## Usage
+
+### Compilation
+
+#### 1. Compile the Main Program
+
+The main program integrates the B+ tree with HNSW for efficient filtering and ANN searches.
+
+**Source Files:**
+- `main.cpp`
+- `BpTree.h`
+- `hnswlib\`
+- Any additional source files required by your project (e.g., `io.h`, `io.cpp`)
+
+**Compilation Command:**
+```bash
+g++ -O3 -std=c++14 -I./hnswlib -o hnsieve_main main.cpp io.cpp
+```
+
+
+
+**Run the Main Program:**
+
+After compiling the main program, you can run it with the following command:
+
+```bash
+./hnsieve_main
+```
+
+
+**Compile the Test Program:**
+
+The test program validates the B+ tree implementation by performing insertion, deletion, and querying operations.
+
+**Source Files:**
+- `bruteforce.cpp`
+
+**Compilation Command:**
+```bash
+g++ -O3 -std=c++14 -o hnsieve_test bruteforce.cpp
+```
+
+
+**Run the Test Program:**
+
+After compiling the test program, you can run it with the following command:
+
+```bash
+./hnsieve_test
+```
+
+

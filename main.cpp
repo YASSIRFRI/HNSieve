@@ -1,3 +1,11 @@
+/*
+
+Author : Yassir Fri
+Date : 28/12/2024
+
+*/
+
+
 #include "BpTree.h"
 #include "hnswlib/hnswlib.h" 
 #include <iostream>
@@ -10,8 +18,18 @@
 #include <cmath>
 #include <algorithm>
 
+
+/*
+    Constants
+*/
+
+int k = 100;
 const int CANDIDATE_THRESHOLD = 100000;
 const int QUERY_DIMENSION = 104; 
+size_t max_elements = 1000000;
+size_t M = 16;
+size_t ef_construction = 100;
+size_t random_seed = 100;
 
 struct Query {
     hnswlib::labeltype query_id;
@@ -41,9 +59,6 @@ int main(int argc, char* argv[]) {
     }
     uint32_t Q = raw_queries.size();
     std::cout << "Loaded " << Q << " queries.\n";
-    for(int i = 0; i < 104; ++i) {
-        std::cout << raw_queries[0][i] << " ";
-    }
 
     bool data_read_success = ReadBin(input_data_file, Dimension, raw_data);
     uint32_t N = raw_data.size();
@@ -52,14 +67,10 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     std::cout << "Read " << raw_data.size() << " vectors from " << input_data_file << std::endl;
-    int k = 100;
 
     BpTree<KeyType, 64> bptree;
 
-    size_t max_elements = 1000000;
-    size_t M = 10;
-    size_t ef_construction = 100;
-    size_t random_seed = 100;
+
     hnswlib::L2Space space(100);
     hnswlib::HierarchicalNSW<float> hnsw(&space, max_elements, M, ef_construction, random_seed, false);
 
@@ -136,14 +147,6 @@ int main(int argc, char* argv[]) {
         }
     }
     cout<<"Number of type 2 queries: "<<queries_type2<<endl;
-    std::cout << queries[0].query_id << " ";
-    std::cout << queries[0].c_min << " ";
-    std::cout << queries[0].c_max << " ";
-    std::cout << queries[0].category << " ";
-    for(int i = 0; i < 100; ++i) {
-        std::cout << queries[0].query_d[i] << " ";
-    }
-
 
     std::vector<std::vector<hnswlib::labeltype>> outputs;
 
@@ -159,20 +162,13 @@ int main(int argc, char* argv[]) {
     for(const auto& q : queries) {
         auto bptree_start = std::chrono::steady_clock::now();
         std::vector<hnswlib::labeltype> candidate_ids;
+        //std::vector<hnswlib::labeltype> candidate_ids_1;
         bptree.FindRangeIds(q.c_min, q.c_max, candidate_ids);
-        /*
-        TO DO:
-            For some reason extreamly slow! (locks?)
-            bptree.FindIdRangeIterative(q.c_min,q.c_max,candidate_ids);
-        */
-
-
-
-        //cout<<"Candidate IDs: ";
-        //for(auto id : candidate_ids) {
-            //std::cout << id << " ";
-        //}
-        std::cout << endl;
+        //bptree.FindIdRangeIterative(q.c_min,q.c_max,candidate_ids);
+        //std::cout<<"Query ID: "<<q.query_id<<"\n";
+        //std::cout<<"Q_MAX: "<<q.c_max<<"\n";
+        //cout<<"Candidate ids size: "<<candidate_ids.size()<<"\n";
+        //cout<<"Candidate ids size 1: "<<candidate_ids_1.size()<<"\n";
         auto bptree_end = std::chrono::steady_clock::now();
         long long bptree_duration = std::chrono::duration_cast<std::chrono::milliseconds>(bptree_end - bptree_start).count();
         total_bptree_time_ms += bptree_duration;
@@ -266,7 +262,6 @@ int main(int argc, char* argv[]) {
         }
         outfile_final << "\n";
     }
-
     outfile_final.close();
 
     std::cout << "----- Performance Metrics -----\n";
@@ -282,6 +277,5 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Output written to '" << output_file << "'.\n";
     std::cout << "Program completed successfully.\n";
-
     return 0;
 }

@@ -80,7 +80,6 @@ public:
 
                 keys_[pos] = key;
                 values_[pos].emplace_back(vector);
-
                 this->count_++;
             }
         }
@@ -108,23 +107,8 @@ public:
         }
     }
 
-    bool Search(const KeyType& key, std::vector<ValueType>& out_vectors) const {
-        auto node = root_;
-        while (!node->is_leaf_) {
-            auto internal = std::static_pointer_cast<InternalNode>(node);
-            int idx = internal->find_child_index(key);
-            node = internal->children_[idx];
-        }
-        auto leaf = std::static_pointer_cast<LeafNode>(node);
-        int idx = leaf->find_key_index(key);
-        if (idx >= 0) {
-            out_vectors = leaf->values_[idx];
-            return true;
-        }
-        return false;
-    }
 
-    // Existing method using std::multimap
+
     void FindRangeIds(const KeyType& c_min, const KeyType& c_max, std::vector<hnswlib::labeltype>& ids) const {
         auto it_low = data_multimap.lower_bound(c_min);
         auto it_up = data_multimap.upper_bound(c_max);
@@ -135,27 +119,33 @@ public:
 
 
 
-    void FindIdRangeIterative(const KeyType& c_min, const KeyType& c_max, std::vector<hnswlib::labeltype>& ids) const {
+    void FindIdRangeIterative(const KeyType& c_min, const KeyType& c_max,
+                            std::vector<hnswlib::labeltype>& ids) const {
         std::shared_ptr<Node> node = root_;
         while (!node->is_leaf_) {
             auto internal = std::static_pointer_cast<InternalNode>(node);
             int idx = internal->find_child_index(c_min);
             node = internal->children_[idx];
         }
+
         auto leaf = std::static_pointer_cast<LeafNode>(node);
-        int pos = std::lower_bound(leaf->keys_, leaf->keys_ + leaf->count_, c_min) - leaf->keys_;
+        int pos = std::lower_bound(leaf->keys_, leaf->keys_ + leaf->count_, c_min)- leaf->keys_;
         while (leaf) {
             for (; pos < leaf->count_; pos++) {
-                if (leaf->keys_[pos] > c_max) return;
-                if (!leaf->values_[pos].empty()) {
-                    ids.push_back(static_cast<hnswlib::labeltype>(leaf->values_[pos][0][0]));
-                    std::cout<<leaf->values_[pos][0][0]<<"\n";
+                if (leaf->keys_[pos] > c_max) {
+                    std::cout<<"Returning\n";
+                    std::cout<<leaf->keys_[pos]<<" "<<c_max<<"\n";
+                    return; 
+                }
+                for (auto& val : leaf->values_[pos]) {
+                    ids.push_back(static_cast<hnswlib::labeltype>(val[0]));
                 }
             }
             leaf = leaf->next_;
             pos = 0; 
         }
     }
+
 
     int FindRange(const KeyType& c_min, const KeyType& c_max) const {
         auto it_low = data_multimap.lower_bound(c_min);
@@ -188,12 +178,10 @@ private:
     void SplitLeafAndGrowRoot(std::shared_ptr<LeafNode> leaf, const KeyType& key, const VectorType& vector) {
         KeyType temp_keys[Order + 1];
         std::vector<ValueType> temp_values[Order + 1];
-
         for (int i = 0; i < leaf->count_; i++) {
             temp_keys[i] = leaf->keys_[i];
             temp_values[i] = leaf->values_[i];
         }
-
         int pos = 0;
         while (pos < leaf->count_ && temp_keys[pos] < key) pos++;
 
@@ -226,7 +214,6 @@ private:
         }
         new_leaf->next_ = leaf->next_;
         leaf->next_ = new_leaf;
-        // Create new root
         auto new_root = std::make_shared<InternalNode>();
         new_root->keys_[0] = new_leaf->keys_[0];
         new_root->children_[0] = leaf;
@@ -237,7 +224,6 @@ private:
 
     void SplitLeafAndGrowUp(std::shared_ptr<Node> node, const KeyType &key, const VectorType &vector) {
         auto leaf = std::static_pointer_cast<LeafNode>(node);
-
         KeyType temp_keys[Order + 1];
         std::vector<ValueType> temp_values[Order + 1];
         for (int i = 0; i < leaf->count_; i++) {
@@ -279,7 +265,6 @@ private:
         leaf->next_ = new_leaf;
 
         if (node == root_) {
-            // Create new root
             auto new_root = std::make_shared<InternalNode>();
             new_root->keys_[0] = new_leaf->keys_[0];
             new_root->children_[0] = leaf;
@@ -293,10 +278,8 @@ private:
 
     void SplitInternalNode(std::shared_ptr<InternalNode> internal) {
         int mid = internal->count_ / 2;
-
         auto new_internal = std::make_shared<InternalNode>();
         int move_count = internal->count_ - mid - 1;
-        
         for (int i = 0; i < move_count; i++) {
             new_internal->keys_[i] = internal->keys_[mid + 1 + i];
             new_internal->children_[i] = internal->children_[mid + 1 + i];
@@ -304,9 +287,8 @@ private:
         new_internal->children_[move_count] = internal->children_[internal->count_];
         new_internal->count_ = move_count;
 
-        KeyType up_key = internal->keys_[mid]; // key to move up
+        KeyType up_key = internal->keys_[mid];
         internal->count_ = mid;
-
         if (internal == root_) {
             auto new_root = std::make_shared<InternalNode>();
             new_root->keys_[0] = up_key;
