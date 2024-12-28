@@ -18,7 +18,7 @@ constexpr int Dimension = 102;
 
 using VectorType = std::array<float, Dimension>;
 
-template<typename KeyType, int Order = 64>
+template<typename KeyType, int Order = 128>
 class BpTree {
 public:
     using ValueType = VectorType;
@@ -87,9 +87,7 @@ public:
     };
 
 public:
-    // Constructor
     BpTree() : root_(std::make_shared<LeafNode>()) {
-
     }
 
 
@@ -126,11 +124,36 @@ public:
         return false;
     }
 
+    // Existing method using std::multimap
     void FindRangeIds(const KeyType& c_min, const KeyType& c_max, std::vector<hnswlib::labeltype>& ids) const {
         auto it_low = data_multimap.lower_bound(c_min);
         auto it_up = data_multimap.upper_bound(c_max);
         for(auto it = it_low; it != it_up; ++it){
             ids.push_back(static_cast<hnswlib::labeltype>(it->second[0]));
+        }
+    }
+
+
+
+    void FindIdRangeIterative(const KeyType& c_min, const KeyType& c_max, std::vector<hnswlib::labeltype>& ids) const {
+        std::shared_ptr<Node> node = root_;
+        while (!node->is_leaf_) {
+            auto internal = std::static_pointer_cast<InternalNode>(node);
+            int idx = internal->find_child_index(c_min);
+            node = internal->children_[idx];
+        }
+        auto leaf = std::static_pointer_cast<LeafNode>(node);
+        int pos = std::lower_bound(leaf->keys_, leaf->keys_ + leaf->count_, c_min) - leaf->keys_;
+        while (leaf) {
+            for (; pos < leaf->count_; pos++) {
+                if (leaf->keys_[pos] > c_max) return;
+                if (!leaf->values_[pos].empty()) {
+                    ids.push_back(static_cast<hnswlib::labeltype>(leaf->values_[pos][0][0]));
+                    std::cout<<leaf->values_[pos][0][0]<<"\n";
+                }
+            }
+            leaf = leaf->next_;
+            pos = 0; 
         }
     }
 
@@ -223,7 +246,7 @@ private:
         }
 
         int pos = 0;
-        while(pos<leaf->count_&&temp_keys[pos]<key) pos++;
+        while(pos < leaf->count_ && temp_keys[pos] < key) pos++;
         if (pos < leaf->count_ && temp_keys[pos] == key) {
             temp_values[pos].push_back(vector);
         } else {
