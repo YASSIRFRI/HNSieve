@@ -51,7 +51,7 @@ The main program integrates the B+ tree with HNSW for efficient filtering and AN
 
 **Compilation Command:**
 ```bash
-g++ -O3 -std=c++14 -I./hnswlib -o hnsieve_main main.cpp io.cpp
+g++ -O3 -std=c++14 -I./hnswlib -o hnsieve_main main.cpp 
 ```
 
 

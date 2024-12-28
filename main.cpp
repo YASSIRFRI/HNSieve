@@ -27,8 +27,8 @@ int k = 100;
 const int CANDIDATE_THRESHOLD = 100000;
 const int QUERY_DIMENSION = 104; 
 size_t max_elements = 1000000;
-size_t M = 16;
-size_t ef_construction = 100;
+size_t M = 24;
+size_t ef_construction = 56;
 size_t random_seed = 100;
 
 struct Query {
